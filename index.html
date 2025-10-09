@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive 3D Gradient Visualizer</title>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/mathquill/0.10.1/mathquill.css"/>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/1.11.0/jquery.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathquill/0.10.1/mathquill.js"></script>
+    
+    <link rel="stylesheet" href="style.css">
+    
+    <script src="https://cdn.plot.ly/plotly-latest.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mathjs/12.4.1/math.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>Interactive 3D Gradient Visualizer</h1>
+        <p class="instructions">
+            Click anywhere on the 3D surface to release a particle. The particle's path will trace the direction of steepest change.
+        </p>
+        
+        <div class="main-controls">
+            <div class="control-column">
+                <fieldset>
+                    <legend>Surface Setup</legend>
+                    <div class="equation-container">
+                        <span>f(x, y) =</span>
+                        <span id="math-field" data-initial-latex="\frac{\sin\left(sqrt\left(x^2+y^2\right)\right)}{sqrt\left(x^2+y^2\right)}"></span>
+                    </div>
+                    <div class="range-container">
+                        <div class="range-item">X Range: [<input type="number" id="x-min" value="-8">, <input type="number" id="x-max" value="8">]</div>
+                        <div class="range-item">Y Range: [<input type="number" id="y-min" value="-8">, <input type="number" id="y-max" value="8">]</div>
+                        <div class="range-item">Z Range: [<input type="number" id="z-min" value="-1">, <input type="number" id="z-max" value="1">]</div>
+                    </div>
+                    <button id="updateButton">Update Surface</button>
+                </fieldset>
+            </div>
+
+            <div class="control-column">
+                 <fieldset>
+                    <legend>Animation & Settings</legend>
+                    <div class="start-point-container">
+                        <strong>Start Point:</strong>
+                        X: <input type="text" id="start-x" readonly>
+                        Y: <input type="text" id="start-y" readonly>
+                    </div>
+                    <div class="action-buttons">
+                        <button id="animateButton">Animate Path</button>
+                        <button id="clearButton">Clear Path</button>
+                    </div>
+                    <div class="settings-group">
+                        <div class="toggle-switch">
+                            <span>Descent</span>
+                            <label class="switch"><input type="checkbox" id="modeToggle"><span class="slider"></span></label>
+                            <span>Ascent</span>
+                        </div>
+                        <div class="setting-item">
+                            <label for="fpsSelect"><strong>Speed:</strong></label>
+                            <select id="fpsSelect">
+                                <option value="15">Slow</option>
+                                <option value="30" selected>Normal</option>
+                                <option value="60">Fast</option>
+                            </select>
+                        </div>
+                        <div class="setting-item">
+                            <label for="opacitySlider"><strong>Opacity:</strong></label>
+                            <input type="range" id="opacitySlider" min="0.1" max="1" value="1" step="0.05">
+                        </div>
+                    </div>
+                 </fieldset>
+            </div>
+        </div>
+        
+        <p id="error-message" class="error"></p>
+        <div id="plot"></div>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>
