@@ -1,3 +1,4 @@
+// JavaScript source code
 document.addEventListener('DOMContentLoaded', () => {
     const plotDiv = document.getElementById('plot');
     const modeToggle = document.getElementById('modeToggle');
@@ -22,6 +23,26 @@ document.addEventListener('DOMContentLoaded', () => {
     let compiledFunction = null;
     let compiledGradient = { x: null, y: null };
     let animationId = null;
+    
+    let ballSizeFactor = 0.02;
+
+    function getSphereData(centerX, centerY, centerZ, radiusX, radiusY, radiusZ, resolution = 20) {
+        let x = [], y = [], z = [];
+        for (let i = 0; i<= resolution; i++) {
+            let lat = Math.PI * (-0.5 + i / resolution);
+            let sinLat = Math.sin(lat);
+            let cosLat = Math.cos(lat);
+            for (let j = 0; j <= resolution; j++) {
+                let lon = 2 * Math.PI * (j / resolution);
+                let sinLon = Math.sin(lon); 
+                let cosLon = Math.cos(lon);
+                x.push(centerX + radiusX * cosLat * cosLon);
+                y.push(centerY + radiusY * cosLat * sinLon);
+                z.push(centerZ + radiusZ * sinLat);
+            }
+        }
+        return { x: x, y: y, z: z };
+    }
 
     const f = (x, y) => {
         try {
@@ -210,7 +231,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const clearPath = () => {
         if (animationId) cancelAnimationFrame(animationId);
         animationId = null;
-        if (plotDiv.data.length > 1) Plotly.deleteTraces(plotDiv, [1, 2]);
+        if (plotDiv.data && plotDiv.data.length > 1) {
+            const tracesToDelete = [];
+            const pathIndex = plotDiv.data.findIndex(trace => trace.name === 'Path');
+            const ballIndex = plotDiv.data.findIndex(trace => trace.name === 'Ball');
+            if(pathIndex !== -1) tracesToDelete.push(pathIndex);
+            if(ballIndex !== -1) tracesToDelete.push(ballIndex);
+            if(tracesToDelete.length > 0) {
+                tracesToDelete.sort((a, b) => b - a);
+                Plotly.deleteTraces(plotDiv, tracesToDelete)
+            }
+        }
         animateButton.disabled = false;
         updateButton.disabled = false;
     };
@@ -238,44 +269,86 @@ document.addEventListener('DOMContentLoaded', () => {
         const path = { x: [], y: [], z: [] };
         let current = { x: x0, y: y0 };
         const lr = 0.04, maxSteps = 250, ascend = modeToggle.checked;
+
+        const xMin = parseFloat(document.getElementById("x-min").value);
+        const xMax = parseFloat(document.getElementById("x-max").value);
+        const yMin = parseFloat(document.getElementById("y-min").value);
+        const yMax = parseFloat(document.getElementById("y-max").value);
+        const zMin = parseFloat(document.getElementById("z-min").value);
+        const zMax = parseFloat(document.getElementById("z-max").value);
+
+        const xRange = xMax - xMin;
+        const yRange = yMax - yMin;
+        const zRange = zMax - zMin;
+        const baseRadius = xRange * ballSizeFactor;
+        const radiusX = baseRadius;
+        const radiusY = baseRadius * (yRange / xRange);
+        const radiusZ = baseRadius * (zRange / xRange);
+
         for (let i = 0; i < maxSteps; i++) {
             const z = f(current.x, current.y);
-            if (!isFinite(current.x) || !isFinite(current.y) || !isFinite(z)) break;
+            if (!isFinite(current.x) || !isFinite(current.y) || !isFinite(z) ||
+                current.x < xMin || current.x > xMax ||
+                current.y < yMin || current.y > yMax || 
+                z < zMin || z > zMax) {
+                break;
+            }
             path.x.push(current.x); path.y.push(current.y); path.z.push(z);
             const [gx, gy] = gradient(current.x, current.y);
             if (!isFinite(gx) || !isFinite(gy) || (Math.abs(gx) < 1e-4 && Math.abs(gy) < 1e-4)) break;
             current.x += (ascend ? 1 : -1) * lr * gx;
             current.y += (ascend ? 1 : -1) * lr * gy;
         }
-        if (path.x.length <= 1) { errorMessage.textContent = 'Cannot calculate path from this start point (gradient may be zero).'; clearPath(); return; }
+        if (path.x.length <= 1) { errorMessage.textContent = 'Cannot calculate path from this start point (gradient may be zero or out of bounds).'; clearPath(); return; }
+
+        const initialBallZ = path.z[0] + radiusZ;
+        const savedCamera = plotDiv.layout?.scene?.camera;
 
         await Plotly.addTraces(plotDiv, [
             { type: 'scatter3d', mode: 'lines', line: { width: 5, color: '#f57c00' }, x: path.x, y: path.y, z: path.z, name: 'Path' },
-            { type: 'scatter3d', mode: 'markers', marker: { size: 12, color: '#d32f2f' }, x: [path.x[0]], y: [path.y[0]], z: [path.z[0]], name: 'Ball' }
+            { type: "mesh3d", alphanull: 0, opacity: 1, color: "#d32f2f", name: "Ball", showlegend: false, hoverinfo: "none", ...getSphereData(path.x[0], path.y[0], initialBallZ, radiusX, radiusY, radiusZ)}
         ]);
-        const ballIndex = plotDiv.data.length - 1;
-        let frame = 0, lastTime = 0, frameDebt = 0;
-        const fps = parseInt(fpsSelect.value), frameDelay = 1000 / fps;
+
+        if (savedCamera) await Plotly.relayout(plotDiv, { 'scene.camera': savedCamera});
+        const ballTraceIndex = plotDiv.data.findIndex(trace => trace.name === 'Ball');
+        if (ballTraceIndex === -1) {
+            errorMessage.textContent = "Error: Ball trace not found after adding."
+            clearPath();
+            return;
+        }
+
+        let lastTime = 0;
+        let animationProgress = 0;
+        const fps = parseInt(fpsSelect.value);
+        const totalFrames = path.x.length;
 
         const animate = (timestamp) => {
             if (!lastTime) lastTime = timestamp;
-            const delta = timestamp - lastTime;
+            const deltaTime = (timestamp - lastTime) / 1000;
             lastTime = timestamp;
-            frameDebt += delta;
-            const framesToAdvance = Math.floor(frameDebt / frameDelay);
-            if (framesToAdvance > 0) {
-                frameDebt -= framesToAdvance * frameDelay;
-                frame += framesToAdvance;
-            }
-            if (frame >= path.x.length) {
-                frame = path.x.length - 1;
-                Plotly.restyle(plotDiv, { x: [[path.x[frame]]], y: [[path.y[frame]]], z: [[path.z[frame]]] }, [ballIndex]);
+
+            animationProgress += deltaTime * fps;
+
+            if (animationProgress >= totalFrames - 1) {
+                const finalZ = path.z[totalFrames - 1] + radiusZ;
+                const finalSphereData = getSphereData(path.x[totalFrames - 1], path.y[totalFrames - 1], finalZ, radiusX, radiusY, radiusZ);
+                Plotly.restyle(plotDiv, { x: [finalSphereData.x], y: [finalSphereData.y], z: [finalSphereData.z] }, [ballTraceIndex]);
                 animateButton.disabled = false;
                 updateButton.disabled = false;
                 animationId = null;
                 return;
             }
-            Plotly.restyle(plotDiv, { x: [[path.x[frame]]], y: [[path.y[frame]]], z: [[path.z[frame]]] }, [ballIndex]);
+
+            const currentFrameIndex = Math.floor(animationProgress);
+            const nextFrameIndex = Math.min(currentFrameIndex + 1, totalFrames - 1);
+            const interpFactor = animationProgress - currentFrameIndex;
+
+            const interpX = path.x[currentFrameIndex] + (path.x[nextFrameIndex] - path.x[currentFrameIndex]) * interpFactor;
+            const interpY = path.y[currentFrameIndex] + (path.y[nextFrameIndex] - path.y[currentFrameIndex]) * interpFactor;
+            const interpZ = path.z[currentFrameIndex] + (path.z[nextFrameIndex] - path.z[currentFrameIndex]) * interpFactor + radiusZ;
+
+            const sphereData = getSphereData(interpX, interpY, interpZ, radiusX, radiusY, radiusZ);
+            Plotly.restyle(plotDiv, { x: [sphereData.x], y: [sphereData.y], z: [sphereData.z] }, [ballTraceIndex]);
             animationId = requestAnimationFrame(animate);
         };
         animationId = requestAnimationFrame(animate);
