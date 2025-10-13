@@ -24,7 +24,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let compiledGradient = { x: null, y: null };
     let animationId = null;
     
-    let ballSizeFactor = 0.02;
+    let ballSizeFactor = 0.025;
 
     function getSphereData(centerX, centerY, centerZ, radiusX, radiusY, radiusZ, resolution = 20) {
         let x = [], y = [], z = [];
@@ -356,4 +356,5 @@ document.addEventListener('DOMContentLoaded', () => {
     
     updateFunctionsAndPlot();
 });
+
 
