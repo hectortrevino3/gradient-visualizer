@@ -306,7 +306,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
         await Plotly.addTraces(plotDiv, [
             { type: 'scatter3d', mode: 'lines', line: { width: 5, color: '#f57c00' }, x: path.x, y: path.y, z: path.z, name: 'Path' },
-            { type: "mesh3d", alphanull: 0, opacity: 1, color: "#d32f2f", name: "Ball", showlegend: false, hoverinfo: "none", ...getSphereData(path.x[0], path.y[0], initialBallZ, radiusX, radiusY, radiusZ)}
+            { type: "mesh3d", alphahull: 0, opacity: 1, color: "#d32f2f", name: "Ball", showlegend: false, hoverinfo: "none", ...getSphereData(path.x[0], path.y[0], initialBallZ, radiusX, radiusY, radiusZ)}
         ]);
 
         if (savedCamera) await Plotly.relayout(plotDiv, { 'scene.camera': savedCamera});
@@ -356,3 +356,4 @@ document.addEventListener('DOMContentLoaded', () => {
     
     updateFunctionsAndPlot();
 });
+
