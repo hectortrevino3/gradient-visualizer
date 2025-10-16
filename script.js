@@ -1,4 +1,3 @@
-// JavaScript source code
 document.addEventListener('DOMContentLoaded', () => {
     const plotDiv = document.getElementById('plot');
     const modeToggle = document.getElementById('modeToggle');
@@ -270,12 +269,12 @@ document.addEventListener('DOMContentLoaded', () => {
         let current = { x: x0, y: y0 };
         const lr = 0.04, maxSteps = 250, ascend = modeToggle.checked;
 
-        const xMin = parseFloat(document.getElementById("x-min").value);
-        const xMax = parseFloat(document.getElementById("x-max").value);
-        const yMin = parseFloat(document.getElementById("y-min").value);
-        const yMax = parseFloat(document.getElementById("y-max").value);
-        const zMin = parseFloat(document.getElementById("z-min").value);
-        const zMax = parseFloat(document.getElementById("z-max").value);
+        const xMin = parseFloat(document.getElementById('x-min').value);
+        const xMax = parseFloat(document.getElementById('x-max').value);
+        const yMin = parseFloat(document.getElementById('y-min').value);
+        const yMax = parseFloat(document.getElementById('y-max').value);
+        const zMin = parseFloat(document.getElementById('z-min').value);
+        const zMax = parseFloat(document.getElementById('z-max').value);
 
         const xRange = xMax - xMin;
         const yRange = yMax - yMin;
@@ -306,13 +305,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
         await Plotly.addTraces(plotDiv, [
             { type: 'scatter3d', mode: 'lines', line: { width: 5, color: '#f57c00' }, x: path.x, y: path.y, z: path.z, name: 'Path' },
-            { type: "mesh3d", alphahull: 0, opacity: 1, color: "#d32f2f", name: "Ball", showlegend: false, hoverinfo: "none", ...getSphereData(path.x[0], path.y[0], initialBallZ, radiusX, radiusY, radiusZ)}
+            { type: 'mesh3d', alphahull: 0, opacity: 1, color: '#d32f2f', name: 'Ball', showlegend: false, hoverinfo: 'none', ...getSphereData(path.x[0], path.y[0], initialBallZ, radiusX, radiusY, radiusZ)}
         ]);
 
         if (savedCamera) await Plotly.relayout(plotDiv, { 'scene.camera': savedCamera});
         const ballTraceIndex = plotDiv.data.findIndex(trace => trace.name === 'Ball');
         if (ballTraceIndex === -1) {
-            errorMessage.textContent = "Error: Ball trace not found after adding."
+            errorMessage.textContent = 'Error: Ball trace not found after adding.'
             clearPath();
             return;
         }
@@ -356,5 +355,3 @@ document.addEventListener('DOMContentLoaded', () => {
     
     updateFunctionsAndPlot();
 });
-
-
