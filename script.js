@@ -191,7 +191,8 @@ document.addEventListener('DOMContentLoaded', () => {
       const layout = {
         scene: {
           xaxis: { title: 'X', range: [xMin, xMax] }, yaxis: { title: 'Y', range: [yMin, yMax] }, zaxis: { title: 'Z', range: [zMin, zMax] },
-          camera: savedCamera || { eye: { x: -1.5, y: -1.5, z: 1.5 } }
+          camera: savedCamera || { eye: { x: -1.5, y: -1.5, z: 1.5 } },
+          aspectmode: 'cube'
         },
         margin: { l: 0, r: 0, b: 0, t: 40 }
       };
@@ -301,14 +302,12 @@ document.addEventListener('DOMContentLoaded', () => {
         if (path.x.length <= 1) { errorMessage.textContent = 'Cannot calculate path from this start point (gradient may be zero or out of bounds).'; clearPath(); return; }
 
         const initialBallZ = path.z[0] + radiusZ;
-        const savedCamera = plotDiv.layout?.scene?.camera;
 
         await Plotly.addTraces(plotDiv, [
             { type: 'scatter3d', mode: 'lines', line: { width: 5, color: '#f57c00' }, x: path.x, y: path.y, z: path.z, name: 'Path' },
             { type: 'mesh3d', alphahull: 0, opacity: 1, color: '#d32f2f', name: 'Ball', showlegend: false, hoverinfo: 'none', ...getSphereData(path.x[0], path.y[0], initialBallZ, radiusX, radiusY, radiusZ)}
         ]);
 
-        if (savedCamera) await Plotly.relayout(plotDiv, { 'scene.camera': savedCamera});
         const ballTraceIndex = plotDiv.data.findIndex(trace => trace.name === 'Ball');
         if (ballTraceIndex === -1) {
             errorMessage.textContent = 'Error: Ball trace not found after adding.'
